@@ -1,30 +1,44 @@
-name: Log Pushes
+name: PR Merge Logger
+
+permissions:
+  contents: write
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    types:
+      - closed
 
 jobs:
-  log-push:
-    if: github.actor != 'github-actions[bot]'
+  log-merge:
+    if: github.event.pull_request.merged == true
 
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Append log
+      - name: Create merge log
         run: |
-          echo "Date: $(date)" >> push-log.txt
-          echo "Commit: ${{ github.event.head_commit.message }}" >> push-log.txt
-          echo "--------------------------------" >> push-log.txt
+          mkdir -p logs
 
-      - name: Commit log file
+          echo "====================================" >> logs/push-log.txt
+          echo "Date: $(date)" >> logs/push-log.txt
+          echo "Merged By: ${{ github.actor }}" >> logs/push-log.txt
+          echo "Repository: ${{ github.repository }}" >> logs/push-log.txt
+          echo "Merged From: ${{ github.event.pull_request.head.ref }}" >> logs/push-log.txt
+          echo "Merged Into: ${{ github.event.pull_request.base.ref }}" >> logs/push-log.txt
+          echo "PR Title: ${{ github.event.pull_request.title }}" >> logs/push-log.txt
+          echo "Commit Message: ${{ github.event.pull_request.body }}" >> logs/push-log.txt
+          echo "====================================" >> logs/push-log.txt
+          echo "" >> logs/push-log.txt
+
+      - name: Commit log
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add push-log.txt
-          git commit -m "Update push log" || exit 0
+          git add logs/push-log.txt
+          git commit -m "Update merge log" || exit 0
           git push
