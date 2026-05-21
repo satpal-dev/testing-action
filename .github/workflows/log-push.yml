@@ -1,4 +1,4 @@
-name: Log Pushes
+name: PR Merge Logger
 
 permissions:
   contents: write
@@ -18,27 +18,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create merge log
+      - name: Create Log
         run: |
           mkdir -p logs
 
           echo "====================================" >> logs/push-log.txt
           echo "Date: $(date)" >> logs/push-log.txt
           echo "Merged By: ${{ github.actor }}" >> logs/push-log.txt
-          echo "Repository: ${{ github.repository }}" >> logs/push-log.txt
           echo "Merged From: ${{ github.event.pull_request.head.ref }}" >> logs/push-log.txt
           echo "Merged Into: ${{ github.event.pull_request.base.ref }}" >> logs/push-log.txt
           echo "PR Title: ${{ github.event.pull_request.title }}" >> logs/push-log.txt
-          echo "Commit Message: ${{ github.event.pull_request.body }}" >> logs/push-log.txt
           echo "====================================" >> logs/push-log.txt
           echo "" >> logs/push-log.txt
 
-      - name: Commit log
+      - name: Commit and Push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add logs/push-log.txt
-          git commit -m "Update merge log" || exit 0
+
+          git commit -m "Update push log" || exit 0
+
+          git pull --rebase origin main
+
           git push
